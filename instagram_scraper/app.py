@@ -207,16 +207,14 @@ class InstagramScraper(object):
 
     def login(self):
         """Logs in to instagram."""
-        self.session.headers.update({'Referer': BASE_URL})
+        self.session.headers.update({'Referer': BASE_URL, 'user-agent': STORIES_UA})
         req = self.session.get(BASE_URL)
 
         self.session.headers.update({'X-CSRFToken': req.cookies['csrftoken']})
 
         login_data = {'username': self.login_user, 'password': self.login_pass}
         login = self.session.post(LOGIN_URL, data=login_data, allow_redirects=True)
-
         self.session.headers.update({'X-CSRFToken': login.cookies['csrftoken']})
-
         self.cookies = login.cookies
         login_text = json.loads(login.text)
 
@@ -225,7 +223,7 @@ class InstagramScraper(object):
             self.rhx_gis = self.get_shared_data()['rhx_gis']
         else:
             self.logger.error('Login failed for ' + self.login_user)
-            return False
+
             if 'checkpoint_url' in login_text:
                 checkpoint_url = login_text.get('checkpoint_url')
                 self.logger.error('Please verify your account at ' + BASE_URL[0:-1] + checkpoint_url)
