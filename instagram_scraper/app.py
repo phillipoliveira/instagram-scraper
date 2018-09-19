@@ -214,7 +214,9 @@ class InstagramScraper(object):
 
         login_data = {'username': self.login_user, 'password': self.login_pass}
         login = self.session.post(LOGIN_URL, data=login_data, allow_redirects=True)
+
         self.session.headers.update({'X-CSRFToken': login.cookies['csrftoken']})
+
         self.cookies = login.cookies
         login_text = json.loads(login.text)
 
@@ -238,25 +240,45 @@ class InstagramScraper(object):
                 self.logger.error(json.dumps(login_text))
 
     def login_challenge(self, checkpoint_url):
-        self.session.headers.update({'Referer': BASE_URL})
-        req = self.session.get(BASE_URL[:-1] + checkpoint_url)
-        self.session.headers.update({'X-CSRFToken': req.cookies['csrftoken'], 'X-Instagram-AJAX': '1'})
+        self.session.headers.update({'Referer': BASE_LOGIN_URL})
+        req = self.session.get(BASE_URL[:-1] + checkpoint_url, cookies={'ig_cb': '1'})
 
-        self.session.headers.update({'Referer': BASE_URL[:-1] + checkpoint_url})
+        self.session.headers.update({'Referer': BASE_URL[:-1] + checkpoint_url,
+                                     'X-CSRFToken': req.cookies['csrftoken']})
         mode = input('Choose a challenge mode (0 - SMS, 1 - Email): ')
-        challenge_data = {'choice': mode}
-        challenge = self.session.post(BASE_URL[:-1] + checkpoint_url, data=challenge_data, allow_redirects=True)
-        self.session.headers.update({'X-CSRFToken': challenge.cookies['csrftoken'], 'X-Instagram-AJAX': '1'})
+        challenge_data = {'choice': mode[:1]}
+        csrf_token = req.cookies['csrftoken']
+        mid = self.session.cookies['mid']
+
+        self.session.headers.clear()
+        self.session.cookies.clear()
+
+        self.session.headers = {
+            'Accept-Encoding': 'gzip, deflate, br',
+            'User-Agent': CHROME_WIN_UA,
+            'Referer': BASE_URL[:-1] + checkpoint_url,
+            'X-CSRFToken': csrf_token,
+            'X-Instagram-AJAX': '6c1f67754dc0',
+            'X-Requested-With': 'XMLHttpRequest'}
+
+        cookies = {
+            'csrftoken': csrf_token,
+            'ig_cb': '1',
+            'mid': mid,
+            'rur': 'PRN',
+            'mcd': '3'}
+
+        challenge = self.session.post(BASE_URL[:-1] + checkpoint_url, cookies=cookies, data=challenge_data, allow_redirects=True)
 
         code = input('Enter code received: ')
-        code_data = {'security_code': code}
-        code = self.session.post(BASE_URL[:-1] + checkpoint_url, data=code_data, allow_redirects=True)
-        self.session.headers.update({'X-CSRFToken': code.cookies['csrftoken']})
+        code_data = {'security_code': code[:6]}
+        code = self.session.post(BASE_URL[:-1] + checkpoint_url, cookies=cookies, data=code_data, allow_redirects=True)
         self.cookies = code.cookies
         code_text = json.loads(code.text)
 
         if code_text.get('status') == 'ok':
             self.logged_in = True
+            self.sessionid = code.cookies['sessionid']
         elif 'errors' in code.text:
             for count, error in enumerate(code_text['challenge']['errors']):
                 count += 1
