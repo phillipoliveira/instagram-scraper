@@ -1,3 +1,22 @@
+Skip to content
+ 
+Search or jump to…
+
+Pull requests
+Issues
+Marketplace
+Explore
+ @phillipoliveira Sign out
+0
+0 355 phillipoliveira/instagram-scraper
+forked from rarcega/instagram-scraper
+ Code  Pull requests 0  Projects 0  Wiki  Insights  Settings
+instagram-scraper/instagram_scraper/app.py
+9f0621f  13 hours ago
+@phillipoliveira phillipoliveira Update app.py
+@rarcega @VasiliPupkin256 @ekalin @orkaa @jorrinpollard @phillipoliveira @Skinner927 @Emalton @ChrisCintron @YunruLiu @stvschmdt @mxfleischanderl @vanyasem @chelmertz @gvkalra @corymb @DillonN @DanielWFrancis @bschollnick @yix @akhepcat @pr1m3r @jackmassry
+     
+1177 lines (960 sloc)  51.1 KB
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
@@ -207,6 +226,8 @@ class InstagramScraper(object):
 
     def login(self):
         """Logs in to instagram."""
+        self.session.headers = {'user-agent': CHROME_WIN_UA}
+        self.rhx_gis = self.get_shared_data()['rhx_gis']
         self.session.headers.update({'Referer': BASE_URL, 'user-agent': STORIES_UA})
         req = self.session.get(BASE_URL)
 
@@ -565,7 +586,8 @@ class InstagramScraper(object):
 
     def scrape(self, executor=concurrent.futures.ThreadPoolExecutor(max_workers=MAX_CONCURRENT_DOWNLOADS)):
         """Crawls through and downloads user's media"""
-        try:
+            self.session.headers = {'user-agent': STORIES_UA}
+            try:
             for username in self.usernames:
                 self.posts = []
                 self.last_scraped_filemtime = 0
@@ -1082,16 +1104,12 @@ def main():
         epilog=textwrap.dedent("""
         You can hide your credentials from the history, by reading your
         username from a local file:
-
         $ instagram-scraper @insta_args.txt user_to_scrape
-
         with insta_args.txt looking like this:
         -u=my_username
         -p=my_password
-
         You can add all arguments you want to that file, just remember to have
         one argument per line.
-
         """),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         fromfile_prefix_chars='@')
@@ -1174,3 +1192,16 @@ def main():
 
 if __name__ == '__main__':
     main()
+© 2018 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Help
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
+Press h to open a hovercard with more details.
